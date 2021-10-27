@@ -1,0 +1,180 @@
+  METHOD zii_si_verbas_in~si_verbas_in.
+    DATA:
+      lv_contractnumber       TYPE bapicckey-condition_contract_number,
+
+      lw_headdatain           TYPE bapicchead,
+      lw_headdatainx          TYPE bapiccheadx,
+      lw_headdataout          TYPE bapiccheados,
+
+      lt_return               TYPE TABLE OF bapiret2,
+      lt_mensagem             TYPE zdt_verbas_response_mensag_tab,
+      lt_conditionkeydatain   TYPE TABLE OF bapiccconditionkey,
+      lt_conditionkeydatainx  TYPE TABLE OF bapiccconditionkeyx,
+      lt_conditionitemdatain  TYPE TABLE OF bapiccconditionitem,
+      lt_bvbdatain            TYPE TABLE OF bapiccbvb,
+      lt_bvbdatainx           TYPE TABLE OF bapiccbvbx,
+      lt_conditionitemdatainx TYPE TABLE OF bapiccconditionitemx,
+
+      r_verba                 TYPE RANGE OF bapicchead-settl_material.
+
+    DATA:
+      lo_tvarv TYPE REF TO zcl_get_set_tvarv.
+
+    lw_headdatain-contract_type                  = input-mt_verbas_request-tp_contrato.
+    lw_headdatain-vendor_owner                   = input-mt_verbas_request-fornecedor.
+    CONCATENATE input-mt_verbas_request-validade_de+6(4)
+                input-mt_verbas_request-validade_de+3(2)
+                input-mt_verbas_request-validade_de(2)
+                INTO lw_headdatain-validity_date_from.
+
+    CONCATENATE input-mt_verbas_request-validade_ate+6(4)
+                input-mt_verbas_request-validade_ate+3(2)
+                input-mt_verbas_request-validade_ate(2)
+                INTO lw_headdatain-validity_date_to.
+
+    lw_headdatain-condition_contract_externalnum = input-mt_verbas_request-observacao.
+    lw_headdatain-cond_contract_currency_iso     = 'BRL'.
+    lw_headdatain-purch_org                      = 'CL01'.
+    lw_headdatain-pur_group                      = input-mt_verbas_request-gp_comprador.
+    lw_headdatain-pmnttrms                       = input-mt_verbas_request-cond_pagamento.
+    lw_headdatain-comp_code                      = '1000'.
+
+    CREATE OBJECT lo_tvarv
+      EXPORTING
+        prefix    = 'ZMM_MATERIAL'
+        separator = '_'.
+
+
+    CALL METHOD lo_tvarv->get_seloption
+      EXPORTING
+        suffix = 'VERBA'
+      IMPORTING
+        value  = r_verba.
+
+    IF r_verba IS NOT INITIAL.
+
+      CALL FUNCTION 'CONVERSION_EXIT_MATN5_INPUT'
+        EXPORTING
+          input        = r_verba[ 1 ]-low
+        IMPORTING
+          output       = lw_headdatain-settl_material
+        EXCEPTIONS
+          length_error = 1
+          OTHERS       = 2.
+
+      lw_headdatainx-settl_material               = abap_true.
+
+    ENDIF.
+
+    lw_headdatainx-cond_contract_currency         = abap_true.
+    lw_headdatainx-contract_type                  = abap_true.
+    lw_headdatainx-pmnttrms                       = abap_true.
+    lw_headdatainx-vendor_owner                   = abap_true.
+    lw_headdatainx-validity_date_from             = abap_true.
+    lw_headdatainx-validity_date_to               = abap_true.
+    lw_headdatainx-condition_contract_externalnum = abap_true.
+    lw_headdatainx-cond_contract_currency_iso     = abap_true.
+    lw_headdatainx-purch_org                      = abap_true.
+    lw_headdatainx-pur_group                      = abap_true.
+    lw_headdatainx-comp_code                      = abap_true.
+*    lw_headdatainx-settl_material                 = abap_true.
+
+    APPEND INITIAL LINE TO lt_conditionkeydatain ASSIGNING FIELD-SYMBOL(<fs_conditionkeydatain>).
+
+    <fs_conditionkeydatain>-table_no   = '4AB'.
+    <fs_conditionkeydatain>-cond_type  = 'FIXV'.
+    CONCATENATE input-mt_verbas_request-validade_de+6(4)
+                input-mt_verbas_request-validade_de+3(2)
+                input-mt_verbas_request-validade_de(2)
+                INTO <fs_conditionkeydatain>-valid_from.
+*    <fs_conditionkeydatain>-valid_from = input-mt_verbas_request-validade_de.
+    CONCATENATE input-mt_verbas_request-validade_ate+6(4)
+                input-mt_verbas_request-validade_ate+3(2)
+                input-mt_verbas_request-validade_ate(2)
+                INTO <fs_conditionkeydatain>-valid_to.
+*    <fs_conditionkeydatain>-valid_to   = input-mt_verbas_request-validade_ate.
+    <fs_conditionkeydatain>-order_catg = '00'.
+
+    APPEND INITIAL LINE TO lt_conditionkeydatainx ASSIGNING FIELD-SYMBOL(<fs_conditionkeydatainx>).
+
+    <fs_conditionkeydatainx>-order_catg   = abap_true.
+    <fs_conditionkeydatainx>-status       = abap_true.
+
+    APPEND INITIAL LINE TO lt_conditionitemdatain ASSIGNING FIELD-SYMBOL(<fs_conditionitemdatain>).
+
+
+    DATA(vl_amount) = input-mt_verbas_request-valor.
+    REPLACE ',' WITH '.' INTO vl_amount.
+    <fs_conditionitemdatain>-amount     = vl_amount.
+    <fs_conditionitemdatain>-cond_count = '00'.
+    <fs_conditionitemdatain>-calc_type  = 'B'.
+    <fs_conditionitemdatain>-condcurr   = 'BRL'.
+
+    APPEND INITIAL LINE TO lt_conditionitemdatainx ASSIGNING FIELD-SYMBOL(<fs_conditionitemdatainx>).
+
+    <fs_conditionitemdatainx>-amount     = abap_true.
+    <fs_conditionitemdatainx>-cond_count = abap_true.
+    <fs_conditionitemdatainx>-calc_type  = abap_true.
+    <fs_conditionitemdatainx>-condcurr   = abap_true.
+
+    APPEND INITIAL LINE TO lt_bvbdatain ASSIGNING FIELD-SYMBOL(<fs_bvbdatain>).
+
+    <fs_bvbdatain>-fieldcombination = '0018'.
+    <fs_bvbdatain>-plant_new        = '1001'.
+    <fs_bvbdatain>-include_exclude  = 'I'.
+
+    APPEND INITIAL LINE TO lt_bvbdatainx ASSIGNING FIELD-SYMBOL(<fs_bvbdatainx>).
+
+    <fs_bvbdatainx>-updateflag = 'I'.
+
+
+
+
+    CALL FUNCTION 'BAPI_CONDITION_CONTRACT_CREATE'
+      EXPORTING
+        headdatain              = lw_headdatain
+        headdatainx             = lw_headdatainx
+      IMPORTING
+        headdataout             = lw_headdataout
+        conditioncontractnumber = lv_contractnumber
+      TABLES
+        conditionkeydatain      = lt_conditionkeydatain
+        conditionkeydatainx     = lt_conditionkeydatainx
+        conditionitemdatain     = lt_conditionitemdatain
+        conditionitemdatainx    = lt_conditionitemdatainx
+        bvbdatain               = lt_bvbdatain
+        bvbdatainx              = lt_bvbdatainx
+        return                  = lt_return.
+
+
+    LOOP AT lt_return INTO DATA(lw_return).
+
+      APPEND INITIAL LINE TO lt_mensagem ASSIGNING FIELD-SYMBOL(<fs_mensagem>).
+
+      CALL FUNCTION 'FORMAT_MESSAGE'
+        EXPORTING
+          id        = lw_return-id
+          no        = lw_return-number
+          v1        = lw_return-message_v1
+          v2        = lw_return-message_v2
+          v3        = lw_return-message_v3
+          v4        = lw_return-message_v4
+        IMPORTING
+          msg       = <fs_mensagem>-status
+        EXCEPTIONS
+          not_found = 1
+          OTHERS    = 2.
+
+    ENDLOOP.
+
+    output-mt_verbas_response-mensagem = lt_mensagem.
+
+    IF lv_contractnumber IS NOT INITIAL.
+
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+
+    ENDIF.
+
+  ENDMETHOD.

@@ -1,0 +1,16 @@
+    DATA: lv_int TYPE i,
+          lv_len TYPE i.
+
+    lv_len = strlen( zyourvar ).
+
+    CLEAR lv_int.
+
+    WHILE lv_int < lv_len.
+      IF NOT zyourvar+lv_int(1) CA '0123456789'.
+        MOVE space TO zyourvar+lv_int(1).
+      ENDIF.
+
+      ADD 1 TO lv_int.
+    ENDWHILE.
+
+    CONDENSE zyourvar NO-GAPS.

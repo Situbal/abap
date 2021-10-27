@@ -1,0 +1,40 @@
+REPORT  Z_ABAPMEMO.
+
+* Report que passa os dados para a memória
+
+DATA: v_name(4) type c,
+      v_idade type i,
+      v_sal type P decimals 2.
+
+v_name = 'João'.
+v_idade = 21.
+v_sal = 1000.
+
+EXPORT: v_name
+        v_idade
+        v_sal     TO MEMORY ID 'M_DADOS'.
+
+WRITE:
+       / v_name,
+         v_idade,
+         v_sal.
+
+-------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
+
+REPORT  Z_ABAPMEMO2.
+
+* Report que importa os dados da memória.
+
+DATA: w_name(4) type c,
+      w_idade type i,
+      w_sal type p decimals 2.
+
+IMPORT v_name  TO w_name
+       v_idade TO w_idade
+       v_sal   TO w_sal FROM MEMORY ID 'M_DADOS'.
+
+WRITE:
+       / w_name,
+         w_idade,
+         w_sal.
