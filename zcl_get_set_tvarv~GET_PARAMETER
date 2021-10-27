@@ -1,0 +1,21 @@
+  METHOD get_parameter.
+
+*   Get single value from TVARV
+    READ TABLE t_val INTO wa_val WITH KEY
+     suffix = suffix
+     type   = 'P'
+    BINARY SEARCH.
+
+    IF sy-subrc <> 0.
+
+      DATA(text) = g_prefix && suffix.
+      MESSAGE i000(zmm_acordos) WITH 'Parâmetro' text 'não encontrado na STVARV'.
+      EXIT.
+    ENDIF.
+
+    value = wa_val-low.
+
+  ENDMETHOD.
+  
+@78\QImporting@	SUFFIX	TYPE STRING
+@79\QExporting@	VALUE	TYPE ANY
