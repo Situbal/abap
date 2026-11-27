@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finanças da Família</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --text:#1d2433; --muted:#6b7385; --line:#e3e6ec;
+  --primary:#2f6fde; --p1:#2f6fde; --p2:#c2410c; --fam:#0f8a5f; --danger:#c62828; --ok:#0f8a5f;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#12151c;--card:#1b2029;--text:#e7eaf0;--muted:#9aa3b5;--line:#2c3340;
+  --primary:#6b9cff;--p1:#6b9cff;--p2:#f0875a;--fam:#3ccf95;--danger:#ff6b6b;--ok:#3ccf95;}
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;position:sticky;top:0;z-index:5}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:1100px;margin:0 auto}
+h1{font-size:18px;margin:0}
+h2{font-size:16px;margin:0 0 12px}
+.month{display:flex;align-items:center;gap:8px}
+.month strong{min-width:150px;text-align:center}
+nav.tabs{display:flex;gap:4px;max-width:1100px;margin:10px auto 0;overflow-x:auto}
+nav.tabs button{border:0;background:none;padding:8px 12px;border-radius:8px;color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap}
+nav.tabs button.active{background:var(--primary);color:#fff}
+button,.btn{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--text);padding:7px 12px;border-radius:8px;cursor:pointer}
+button.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+button.danger{color:var(--danger)}
+button.icon{padding:4px 8px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+.kpi .label{color:var(--muted);font-size:13px}
+.kpi .value{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.pos{color:var(--ok)} .neg{color:var(--danger)}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;color:#fff}
+.tag.p1{background:var(--p1)} .tag.p2{background:var(--p2)} .tag.familia{background:var(--fam)}
+form.row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);flex:1 1 140px}
+input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);width:100%}
+input[type=checkbox]{width:auto}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--primary)}
+.cat-row{display:grid;grid-template-columns:130px 1fr 110px;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.muted{color:var(--muted)}
+.hidden{display:none}
+.scroll{overflow-x:auto}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.filters select{width:auto}
+.settle{font-size:16px;padding:12px;border-radius:10px;background:var(--bg)}
+tr.paid td:not(:last-child){opacity:.55}
+@media (max-width:600px){
+  .cat-row{grid-template-columns:90px 1fr 90px}
+  .month strong{min-width:110px}
+  .hide-sm{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>💰 Finanças da Família</h1>
+    <div class="month">
+      <button class="icon" id="prevM" aria-label="Mês anterior">◀</button>
+      <strong id="monthLabel"></strong>
+      <button class="icon" id="nextM" aria-label="Próximo mês">▶</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="resumo" class="active">Resumo</button>
+    <button data-tab="renda">Salários e renda</button>
+    <button data-tab="despesas">Despesas</button>
+    <button data-tab="ano">Visão anual</button>
+    <button data-tab="config">Configurações</button>
+  </nav>
+</header>
+
+<main class="wrap">
+
+<!-- RESUMO -->
+<section id="tab-resumo">
+  <div class="grid">
+    <div class="card kpi"><div class="label">Renda total</div><div class="value" id="kRenda"></div></div>
+    <div class="card kpi"><div class="label">Despesas totais</div><div class="value" id="kDesp"></div></div>
+    <div class="card kpi"><div class="label">Saldo do mês</div><div class="value" id="kSaldo"></div></div>
+    <div class="card kpi"><div class="label">Ainda a pagar</div><div class="value" id="kAberto"></div></div>
+  </div>
+  <div class="card">
+    <h2>Por pessoa</h2>
+    <div class="scroll"><table id="tPessoas"></table></div>
+    <p class="muted" id="regraTxt" style="font-size:13px;margin-bottom:0"></p>
+  </div>
+  <div class="card">
+    <h2>Acerto de contas das despesas da família</h2>
+    <div class="settle" id="acerto"></div>
+  </div>
+  <div class="card">
+    <h2>Despesas por categoria</h2>
+    <div id="cats"></div>
+  </div>
+</section>
+
+<!-- RENDA -->
+<section id="tab-renda" class="hidden">
+  <div class="card">
+    <h2>Adicionar renda</h2>
+    <form class="row" id="fRenda">
+      <label class="f">Pessoa<select name="pessoa" id="rPessoa"></select></label>
+      <label class="f">Descrição<input name="desc" required placeholder="Salário, 13º, freelance..."></label>
+      <label class="f">Valor (R$)<input name="valor" type="number" step="0.01" min="0" required></label>
+      <label class="f" style="flex:0 0 auto;flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="recorrente" checked> Mensal</label>
+      <button class="primary">Adicionar</button>
+    </form>
+  </div>
+  <div class="card scroll"><table id="tRenda"></table></div>
+</section>
+
+<!-- DESPESAS -->
+<section id="tab-despesas" class="hidden">
+  <div class="card">
+    <h2>Adicionar despesa</h2>
+    <form class="row" id="fDesp">
+      <label class="f">Descrição<input name="desc" required placeholder="Aluguel, mercado..."></label>
+      <label class="f">Valor (R$)<input name="valor" type="number" step="0.01" min="0" required></label>
+      <label class="f">Categoria<select name="cat" id="dCat"></select></label>
+      <label class="f">De quem é<select name="dono" id="dDono"></select></label>
+      <label class="f">Quem pagou<select name="pagador" id="dPagador"></select></label>
+      <label class="f">Vencimento<input name="venc" type="number" min="1" max="31" placeholder="dia"></label>
+      <label class="f" style="flex:0 0 auto;flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="recorrente"> Fixa mensal</label>
+      <label class="f" style="flex:0 0 auto;flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="pago"> Já paga</label>
+      <button class="primary">Adicionar</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="filters">
+      <select id="filDono"></select>
+      <select id="filCat"></select>
+      <select id="filPago"><option value="">Todas</option><option value="1">Pagas</option><option value="0">A pagar</option></select>
+    </div>
+    <div class="scroll"><table id="tDesp"></table></div>
+  </div>
+</section>
+
+<!-- ANO -->
+<section id="tab-ano" class="hidden">
+  <div class="card scroll">
+    <h2 id="anoTit"></h2>
+    <table id="tAno"></table>
+  </div>
+</section>
+
+<!-- CONFIG -->
+<section id="tab-config" class="hidden">
+  <div class="card">
+    <h2>Pessoas</h2>
+    <form class="row" id="fPessoas">
+      <label class="f">Pessoa 1<input name="p1" required></label>
+      <label class="f">Pessoa 2<input name="p2" required></label>
+      <label class="f">Divisão das despesas da família
+        <select name="regra">
+          <option value="proporcional">Proporcional à renda</option>
+          <option value="igual">Meio a meio (50/50)</option>
+          <option value="fixa">Percentual fixo</option>
+        </select>
+      </label>
+      <label class="f">% da Pessoa 1 (se fixo)<input name="pct" type="number" min="0" max="100" step="1"></label>
+      <button class="primary">Salvar</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Categorias</h2>
+    <form class="row" id="fCat">
+      <label class="f">Nova categoria<input name="nome" required></label>
+      <button>Adicionar</button>
+    </form>
+    <div id="listCats" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+  <div class="card">
+    <h2>Dados e backup</h2>
+    <p class="muted" style="margin-top:0">Os dados ficam salvos só neste navegador. Faça backup e use "Importar" para levar os dados a outro aparelho.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="btnExport">Exportar backup (JSON)</button>
+      <button id="btnCsv">Exportar mês (CSV)</button>
+      <label class="btn">Importar backup<input type="file" id="fileImport" accept=".json" hidden></label>
+      <button class="danger" id="btnReset">Apagar tudo</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function(){
+const KEY='financasFamilia.v1';
+const DEFAULT={
+  pessoas:{p1:'Pessoa 1',p2:'Pessoa 2'},
+  regra:'proporcional', pct:50,
+  categorias:['Moradia','Alimentação','Transporte','Saúde','Educação','Lazer','Contas (luz/água/net)','Filhos','Pets','Vestuário','Assinaturas','Cartão de crédito','Outros'],
+  meses:{} // 'AAAA-MM': {renda:[], despesas:[]}
+};
+let db=load();
+let cur=new Date(); cur=ym(cur.getFullYear(),cur.getMonth());
+
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.meses)return Object.assign(structuredClone(DEFAULT),d);}catch(e){}return structuredClone(DEFAULT);}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){alert('Não foi possível salvar no navegador.');}}
+function ym(y,m){const d=new Date(y,m,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function shift(key,n){const [y,m]=key.split('-').map(Number);return ym(y,m-1+n);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);
+const nome=k=>k==='familia'?'Família':db.pessoas[k];
+const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+
+// Ao abrir um mês novo, copia renda e despesas recorrentes do mês anterior mais recente
+function mes(key){
+  if(!db.meses[key]){
+    const anteriores=Object.keys(db.meses).filter(k=>k<key).sort();
+    const base=anteriores.length?db.meses[anteriores[anteriores.length-1]]:null;
+    db.meses[key]={
+      renda:base?base.renda.filter(r=>r.recorrente).map(r=>({...r,id:uid()})):[],
+      despesas:base?base.despesas.filter(d=>d.recorrente).map(d=>({...d,id:uid(),pago:false})):[]
+    };
+    save();
+  }
+  return db.meses[key];
+}
+
+function calc(key){
+  const m=db.meses[key]||{renda:[],despesas:[]};
+  const renda={p1:sum(m.renda.filter(r=>r.pessoa==='p1'),r=>r.valor),p2:sum(m.renda.filter(r=>r.pessoa==='p2'),r=>r.valor)};
+  const rTot=renda.p1+renda.p2;
+  let share1;
+  if(db.regra==='igual')share1=.5;
+  else if(db.regra==='fixa')share1=(+db.pct||0)/100;
+  else share1=rTot>0?renda.p1/rTot:.5;
+  const share={p1:share1,p2:1-share1};
+  const desp=m.despesas;
+  const fam=sum(desp.filter(d=>d.dono==='familia'),d=>d.valor);
+  const pessoal={p1:sum(desp.filter(d=>d.dono==='p1'),d=>d.valor),p2:sum(desp.filter(d=>d.dono==='p2'),d=>d.valor)};
+  const pagouFam={p1:sum(desp.filter(d=>d.dono==='familia'&&d.pagador==='p1'),d=>d.valor),p2:sum(desp.filter(d=>d.dono==='familia'&&d.pagador==='p2'),d=>d.valor)};
+  const parteFam={p1:fam*share.p1,p2:fam*share.p2};
+  const total=sum(desp,d=>d.valor);
+  const aberto=sum(desp.filter(d=>!d.pago),d=>d.valor);
+  return {renda,rTot,share,fam,pessoal,pagouFam,parteFam,total,aberto};
+}
+
+// ---------- Renderização ----------
+function render(){
+  mes(cur);
+  const [y,mm]=cur.split('-').map(Number);
+  const lbl=new Date(y,mm-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  $('monthLabel').textContent=lbl.charAt(0).toUpperCase()+lbl.slice(1);
+  fillSelects();
+  renderResumo();renderRenda();renderDesp();renderAno();renderConfig();
+}
+
+function opts(list,sel){return list.map(([v,t])=>`<option value="${esc(v)}"${v===sel?' selected':''}>${esc(t)}</option>`).join('');}
+function fillSelects(){
+  const pp=[['p1',db.pessoas.p1],['p2',db.pessoas.p2]];
+  $('rPessoa').innerHTML=opts(pp,$('rPessoa').value||'p1');
+  $('dPagador').innerHTML=opts(pp,$('dPagador').value||'p1');
+  $('dDono').innerHTML=opts([['familia','Família (dividida)'],...pp],$('dDono').value||'familia');
+  $('dCat').innerHTML=opts(db.categorias.map(c=>[c,c]),$('dCat').value||db.categorias[0]);
+  $('filDono').innerHTML=opts([['','Todos'],['familia','Família'],...pp],$('filDono').value);
+  $('filCat').innerHTML=opts([['','Todas as categorias'],...db.categorias.map(c=>[c,c])],$('filCat').value);
+}
+
+function renderResumo(){
+  const c=calc(cur);
+  const saldo=c.rTot-c.total;
+  $('kRenda').textContent=brl(c.rTot);
+  $('kDesp').textContent=brl(c.total);
+  $('kSaldo').textContent=brl(saldo);$('kSaldo').className='value '+(saldo>=0?'pos':'neg');
+  $('kAberto').textContent=brl(c.aberto);
+  const linha=k=>{
+    const custo=c.pessoal[k]+c.parteFam[k];const sobra=c.renda[k]-custo;
+    return `<tr><td><span class="tag ${k}">${esc(db.pessoas[k])}</span></td>
+      <td class="num">${brl(c.renda[k])}</td><td class="num">${brl(c.pessoal[k])}</td>
+      <td class="num">${brl(c.parteFam[k])} <span class="muted">(${(c.share[k]*100).toFixed(0)}%)</span></td>
+      <td class="num ${sobra>=0?'pos':'neg'}"><b>${brl(sobra)}</b></td></tr>`;
+  };
+  $('tPessoas').innerHTML=`<tr><th>Pessoa</th><th class="num">Renda</th><th class="num">Despesas pessoais</th><th class="num">Parte na família</th><th class="num">Sobra</th></tr>${linha('p1')}${linha('p2')}`;
+  const regra={proporcional:'proporcional à renda de cada um',igual:'meio a meio',fixa:`fixa (${db.pct}% / ${100-db.pct}%)`}[db.regra];
+  $('regraTxt').textContent=`Despesas da família neste mês: ${brl(c.fam)}, divididas de forma ${regra}.`;
+
+  // Acerto: quanto cada um pagou da família menos a parte que lhe cabe
+  const dif=c.pagouFam.p1-c.parteFam.p1;
+  let txt;
+  if(c.fam===0)txt='<span class="muted">Ainda não há despesas da família neste mês.</span>';
+  else if(Math.abs(dif)<0.01)txt='✅ Tudo certo: cada um pagou exatamente a sua parte.';
+  else{
+    const deve=dif>0?'p2':'p1',recebe=dif>0?'p1':'p2';
+    txt=`<b>${esc(db.pessoas[deve])}</b> deve transferir <b>${brl(Math.abs(dif))}</b> para <b>${esc(db.pessoas[recebe])}</b>.`;
+  }
+  txt+=`<div class="muted" style="font-size:13px;margin-top:6px">Pagaram das despesas da família: ${esc(db.pessoas.p1)} ${brl(c.pagouFam.p1)} · ${esc(db.pessoas.p2)} ${brl(c.pagouFam.p2)}</div>`;
+  $('acerto').innerHTML=txt;
+
+  const m=db.meses[cur];const porCat={};
+  m.despesas.forEach(d=>porCat[d.cat]=(porCat[d.cat]||0)+d.valor);
+  const arr=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);const max=arr.length?arr[0][1]:1;
+  $('cats').innerHTML=arr.length?arr.map(([k,v])=>`<div class="cat-row"><span>${esc(k)}</span><div class="bar"><span style="width:${(v/max*100).toFixed(1)}%"></span></div><span class="num" style="text-align:right">${brl(v)}</span></div>`).join('')
+    :'<p class="muted">Nenhuma despesa lançada neste mês.</p>';
+}
+
+function renderRenda(){
+  const m=db.meses[cur];
+  const rows=m.renda.map(r=>`<tr><td><span class="tag ${r.pessoa}">${esc(db.pessoas[r.pessoa])}</span></td><td>${esc(r.desc)}</td>
+    <td class="hide-sm">${r.recorrente?'Mensal':'Só este mês'}</td><td class="num">${brl(r.valor)}</td>
+    <td class="num"><button class="icon" data-edit-r="${r.id}" title="Editar valor">✏️</button> <button class="icon danger" data-del-r="${r.id}" title="Excluir">🗑</button></td></tr>`).join('');
+  $('tRenda').innerHTML=`<tr><th>Pessoa</th><th>Descrição</th><th class="hide-sm">Tipo</th><th class="num">Valor</th><th></th></tr>`+(rows||'<tr><td colspan="5" class="muted">Nenhuma renda neste mês.</td></tr>');
+}
+
+function renderDesp(){
+  const m=db.meses[cur];
+  const fD=$('filDono').value,fC=$('filCat').value,fP=$('filPago').value;
+  const list=m.despesas.filter(d=>(!fD||d.dono===fD)&&(!fC||d.cat===fC)&&(fP===''||(d.pago?'1':'0')===fP))
+    .sort((a,b)=>(a.venc||99)-(b.venc||99));
+  const rows=list.map(d=>`<tr class="${d.pago?'paid':''}">
+    <td><input type="checkbox" data-pago="${d.id}" ${d.pago?'checked':''} title="Paga?"></td>
+    <td>${esc(d.desc)}${d.recorrente?' <span class="muted" title="Fixa mensal">↻</span>':''}<div class="muted" style="font-size:12px">${esc(d.cat)}${d.venc?' · vence dia '+d.venc:''}</div></td>
+    <td><span class="tag ${d.dono}">${esc(nome(d.dono))}</span></td>
+    <td class="hide-sm">${esc(db.pessoas[d.pagador])}</td>
+    <td class="num">${brl(d.valor)}</td>
+    <td class="num"><button class="icon" data-edit-d="${d.id}" title="Editar valor">✏️</button> <button class="icon danger" data-del-d="${d.id}" title="Excluir">🗑</button></td></tr>`).join('');
+  $('tDesp').innerHTML=`<tr><th>Paga</th><th>Descrição</th><th>De quem</th><th class="hide-sm">Pagou</th><th class="num">Valor</th><th></th></tr>`+
+    (rows||'<tr><td colspan="6" class="muted">Nenhuma despesa.</td></tr>')+
+    (list.length?`<tr><td></td><td><b>Total</b></td><td></td><td class="hide-sm"></td><td class="num"><b>${brl(sum(list,d=>d.valor))}</b></td><td></td></tr>`:'');
+}
+
+function renderAno(){
+  const y=cur.slice(0,4);$('anoTit').textContent='Ano de '+y;
+  let rows='',tr=0,td=0;
+  for(let i=1;i<=12;i++){
+    const k=y+'-'+String(i).padStart(2,'0');
+    if(!db.meses[k])continue;
+    const c=calc(k);tr+=c.rTot;td+=c.total;
+    rows+=`<tr><td style="text-transform:capitalize">${new Date(+y,i-1,1).toLocaleDateString('pt-BR',{month:'long'})}</td><td class="num">${brl(c.rTot)}</td><td class="num">${brl(c.fam)}</td><td class="num">${brl(c.total)}</td><td class="num ${c.rTot-c.total>=0?'pos':'neg'}">${brl(c.rTot-c.total)}</td></tr>`;
+  }
+  $('tAno').innerHTML=`<tr><th>Mês</th><th class="num">Renda</th><th class="num">Família</th><th class="num">Despesas</th><th class="num">Saldo</th></tr>`+(rows||'<tr><td colspan="5" class="muted">Sem dados.</td></tr>')+
+    (rows?`<tr><td><b>Total</b></td><td class="num"><b>${brl(tr)}</b></td><td></td><td class="num"><b>${brl(td)}</b></td><td class="num ${tr-td>=0?'pos':'neg'}"><b>${brl(tr-td)}</b></td></tr>`:'');
+}
+
+function renderConfig(){
+  const f=$('fPessoas');f.p1.value=db.pessoas.p1;f.p2.value=db.pessoas.p2;f.regra.value=db.regra;f.pct.value=db.pct;
+  $('listCats').innerHTML=db.categorias.map((c,i)=>`<span class="btn" style="cursor:default">${esc(c)} <button class="icon danger" style="border:0;padding:0 4px" data-del-cat="${i}">✕</button></span>`).join('');
+}
+
+// ---------- Eventos ----------
+$('tabs').onclick=e=>{const t=e.target.dataset.tab;if(!t)return;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  document.querySelectorAll('main>section').forEach(s=>s.classList.toggle('hidden',s.id!=='tab-'+t));};
+$('prevM').onclick=()=>{cur=shift(cur,-1);render();};
+$('nextM').onclick=()=>{cur=shift(cur,1);render();};
+
+const num=v=>Math.round(parseFloat(String(v).replace(',','.'))*100)/100;
+$('fRenda').onsubmit=e=>{e.preventDefault();const f=e.target;
+  mes(cur).renda.push({id:uid(),pessoa:f.pessoa.value,desc:f.desc.value.trim(),valor:num(f.valor.value),recorrente:f.recorrente.checked});
+  save();f.desc.value='';f.valor.value='';render();};
+$('fDesp').onsubmit=e=>{e.preventDefault();const f=e.target;
+  mes(cur).despesas.push({id:uid(),desc:f.desc.value.trim(),valor:num(f.valor.value),cat:f.cat.value,dono:f.dono.value,pagador:f.pagador.value,
+    venc:f.venc.value?+f.venc.value:null,recorrente:f.recorrente.checked,pago:f.pago.checked});
+  save();f.desc.value='';f.valor.value='';f.venc.value='';f.pago.checked=false;render();};
+
+// Se a despesa é pessoal, o pagador acompanha o dono por padrão
+$('dDono').onchange=e=>{if(e.target.value!=='familia')$('dPagador').value=e.target.value;};
+['filDono','filCat','filPago'].forEach(id=>$(id).onchange=renderDesp);
+
+document.body.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;const m=db.meses[cur];
+  if(t.dataset.delR&&confirm('Excluir esta renda?')){m.renda=m.renda.filter(r=>r.id!==t.dataset.delR);save();render();}
+  if(t.dataset.delD&&confirm('Excluir esta despesa?')){m.despesas=m.despesas.filter(d=>d.id!==t.dataset.delD);save();render();}
+  if(t.dataset.editR||t.dataset.editD){
+    const item=t.dataset.editR?m.renda.find(r=>r.id===t.dataset.editR):m.despesas.find(d=>d.id===t.dataset.editD);
+    const v=prompt(`Novo valor para "${item.desc}":`,String(item.valor).replace('.',','));
+    if(v!==null&&!isNaN(num(v))){item.valor=num(v);save();render();}
+  }
+  if(t.dataset.delCat!==undefined){db.categorias.splice(+t.dataset.delCat,1);save();render();}
+});
+document.body.addEventListener('change',e=>{
+  const id=e.target.dataset&&e.target.dataset.pago;if(!id)return;
+  const d=db.meses[cur].despesas.find(x=>x.id===id);d.pago=e.target.checked;save();render();
+});
+
+$('fPessoas').onsubmit=e=>{e.preventDefault();const f=e.target;
+  db.pessoas={p1:f.p1.value.trim(),p2:f.p2.value.trim()};db.regra=f.regra.value;db.pct=Math.min(100,Math.max(0,+f.pct.value||50));
+  save();render();alert('Configurações salvas.');};
+$('fCat').onsubmit=e=>{e.preventDefault();const n=e.target.nome.value.trim();
+  if(n&&!db.categorias.includes(n))db.categorias.push(n);e.target.nome.value='';save();render();};
+
+function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+$('btnExport').onclick=()=>download(`financas-familia-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(db,null,2),'application/json');
+$('btnCsv').onclick=()=>{
+  const m=db.meses[cur];const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const lines=['Tipo;Descrição;Categoria;De quem;Quem pagou;Vencimento;Pago;Valor'];
+  m.renda.forEach(r=>lines.push(['Renda',q(r.desc),'',q(db.pessoas[r.pessoa]),'','','',String(r.valor).replace('.',',')].join(';')));
+  m.despesas.forEach(d=>lines.push(['Despesa',q(d.desc),q(d.cat),q(nome(d.dono)),q(db.pessoas[d.pagador]),d.venc||'',d.pago?'Sim':'Não',String(d.valor).replace('.',',')].join(';')));
+  download(`financas-${cur}.csv`,'﻿'+lines.join('\n'),'text/csv');};
+$('fileImport').onchange=e=>{const file=e.target.files[0];if(!file)return;const rd=new FileReader();
+  rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d.meses)throw 0;if(confirm('Substituir todos os dados atuais pelo backup?')){db=Object.assign(structuredClone(DEFAULT),d);save();render();}}
+    catch(_){alert('Arquivo de backup inválido.');}e.target.value='';};rd.readAsText(file);};
+$('btnReset').onclick=()=>{if(confirm('Apagar TODOS os dados? Faça um backup antes.')){db=structuredClone(DEFAULT);save();render();}};
+
+render();
+})();
+</script>
+</body>
+</html>
